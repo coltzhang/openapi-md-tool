@@ -35,7 +35,6 @@ def exec(filename):
 
             requestBody = get_dict_data(data, 'requestBody')
             if requestBody != '':
-                print(requestBody)
                 content = requestBody['content']
                 for item in content:
                     data_type = get_dict_data(content[item]['schema'], 'type')
@@ -51,43 +50,17 @@ def exec(filename):
 }
 """
                     req_demo_data = req_demo_data % (path, req_demo)
-#                 content_data = get_dict_data(requestBody['content'], 'application/json')    # json
-#                 form_data = get_dict_data(requestBody['content'], 'multipart/form-data')    # 表单
-#                 if content_data == '' and form_data != '':
-#                     content_data = form_data
-#                 data_type = get_dict_data(content_data['schema'], 'type')
-#                 if data_type == 'array':    # 数组结构
-#                     ref = content_data['schema']['items']['$ref']
-#                 else:   # 结构体结构
-#                     ref = content_data['schema']['allOf'][0]['$ref']
-#                 recursive_get_sheet_item('^', ref, components, req_sheet, 'requestBody')
-#                 req_demo = req_demo[:-1]
-#                 req_demo_data = """%s
-# {
-# %s
-# }
-# """
-#                 req_demo_data = req_demo_data % (path, req_demo)
 
             # 响应
             res_sheet = []
             responses = data['responses']
             res_200 = get_dict_data(responses, '200')
             if res_200 != '':
-                print(res_200)
                 content = res_200['content']
                 for item in content:
-                    print(content[item])
                     ref = get_dict_data(content[item]['schema'], '$ref')
                     if ref != '':
                         recursive_get_sheet_item('^', ref, components, res_sheet, 'res_200')
-                # application_data = get_dict_data(res_200['content'], 'application/json')
-                # octet_stream = get_dict_data(res_200['content'], 'application/octet-stream')
-                # if application_data == '' and octet_stream != '':
-                #     application_data = octet_stream
-                # ref = get_dict_data(application_data['schema'], '$ref')
-                # if ref != '':
-                #     recursive_get_sheet_item('^', ref, components, res_sheet, 'res_200')
             markdown_text = markdown_text + gen_md(summary, method, path, operationId,
                                                    gen_md_sheet('请求参数', req_sheet),
                                                    gen_md_sheet('响应参数', res_sheet),
@@ -110,7 +83,6 @@ def get_dict_data(data, key):
 
 def get_ref_type(ref, components):
     ref_list = ref.split('/')[2:]
-    # print(ref_list)
     recursive = components
     for v in ref_list:
         recursive = recursive[v]
@@ -119,7 +91,6 @@ def get_ref_type(ref, components):
 
 def get_components_value(ref, components):
     ref_list = ref.split('/')[2:]
-    # print(ref_list)
     recursive = components
     for v in ref_list:
         recursive = recursive[v]
@@ -129,14 +100,11 @@ def get_components_value(ref, components):
 def get_param_detail(symbol, name, item, components, sheet, req_type):    # parameter['schema']
     is_necessary = True
     if get_dict_data(item, 'allOf') != '':  # 使用gen client生成
-        # print('item', item)
         ref = item['allOf'][0]['$ref']
         recursive_get_sheet_item(symbol, ref, components, sheet, req_type)     # 递归遍历标签索引
         param_type = get_ref_type(ref, components)
         item_info = item['allOf'][1]
-        # print('item_info', item_info)
         description = get_dict_data(item_info, 'description')
-        # print('description', description)
         tag = get_dict_data(item_info, 'x-tag-name')
         if tag != '' and tag.find("omitempty") >= 0:
             is_necessary = False
@@ -184,8 +152,6 @@ def recursive_get_sheet_item(symbol, ref, components, sheet, req_type):
         array_ref = get_dict_data(components_value['items'], '$ref')
         if array_ref != '':
             recursive_get_sheet_item(symbol, array_ref, components, sheet, req_type)
-    # elif item_type == 'string':
-    #     get_param_detail(symbol, 'attachment', components_value, components, sheet, req_type)
     return
 
 

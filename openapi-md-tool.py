@@ -22,7 +22,7 @@ def exec(filename):
 
             # 请求
             req_sheet = []
-            req_demo_data = ''
+            req_demo_data = path
             global req_demo
             req_demo = ''
             parameters = get_dict_data(data, 'parameters')
@@ -31,10 +31,11 @@ def exec(filename):
                     name = parameter['name']
                     get_param_detail('', name, parameter['schema'], components, req_sheet, 'parameters')
                 req_demo = req_demo[:-1]
-                req_demo_data = path + '?' + req_demo
+                req_demo_data += '?' + req_demo
 
             requestBody = get_dict_data(data, 'requestBody')
             if requestBody != '':
+                req_demo = ''
                 content = requestBody['content']
                 for item in content:
                     data_type = get_dict_data(content[item]['schema'], 'type')
@@ -44,12 +45,12 @@ def exec(filename):
                         ref = content[item]['schema']['allOf'][0]['$ref']
                     recursive_get_sheet_item('^', ref, components, req_sheet, 'requestBody')
                     req_demo = req_demo[:-1]
-                    req_demo_data = """%s
+                    req_demo_format = """%s
 {
 %s              
 }
 """
-                    req_demo_data = req_demo_data % (path, req_demo)
+                    req_demo_data = req_demo_format % (req_demo_data, req_demo)
 
             # 响应
             res_sheet = []
@@ -61,6 +62,7 @@ def exec(filename):
                     ref = get_dict_data(content[item]['schema'], '$ref')
                     if ref != '':
                         recursive_get_sheet_item('^', ref, components, res_sheet, 'res_200')
+            res_sheet.reverse()     # 响应参数逆序（在表格中显示更好看）
             markdown_text = markdown_text + gen_md(summary, method, path, operationId,
                                                    gen_md_sheet('请求参数', req_sheet),
                                                    gen_md_sheet('响应参数', res_sheet),
@@ -113,8 +115,9 @@ def get_param_detail(symbol, name, item, components, sheet, req_type):    # para
         if param_type == 'array':    # 数组递归遍历标签索引
             ref = item['items']['$ref']
             recursive_get_sheet_item(symbol, ref, components, sheet, req_type)
-        if param_type != 'string':
-            param_type = get_dict_data(item, 'format')
+        item_format = get_dict_data(item, 'format')
+        if item_format != '':
+            param_type = item_format
         description = get_dict_data(item, 'description')
         tag = get_dict_data(item, 'x-tag-name')
         if tag != '' and tag.find("omitempty") >= 0:
@@ -134,7 +137,7 @@ def get_param_detail(symbol, name, item, components, sheet, req_type):    # para
     return
 
 
-def recursive_get_sheet_item(symbol, ref, components, sheet, req_type):
+def recursive_get_sheet_item(symbol, ref, components, sheet, req_type):     # req_type用于构造请求示例
     components_value = get_components_value(ref, components)
     # print('components_value ', components_value)
     item_type = get_dict_data(components_value, 'type')
